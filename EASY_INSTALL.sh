@@ -247,6 +247,46 @@ systemctl enable xrayr
 
 # 创建监控脚本
 echo -e "${GREEN}创建监控工具...${NC}"
+
+# 创建JSON格式监控器（纯JSON输出）
+cat > /usr/local/bin/xrayr-json-monitor << 'JSON_MONITOR'
+#!/usr/bin/env python3
+import socket, json, sys
+try:
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.connect(('127.0.0.1', 9999))
+    buffer = ""
+    while True:
+        data = s.recv(4096).decode('utf-8')
+        if not data: break
+        buffer += data
+        lines = buffer.split('\n')
+        buffer = lines[-1]
+        for line in lines[:-1]:
+            if line.strip():
+                try:
+                    msg = json.loads(line)
+                    if msg.get('type') == 'url_access':
+                        print(json.dumps(msg, ensure_ascii=False))
+                        sys.stdout.flush()
+                except: pass
+except KeyboardInterrupt: pass
+except Exception as e: print(f"连接错误: {e}", file=sys.stderr)
+JSON_MONITOR
+
+# 创建简单JSON监控器（bash版本）
+cat > /usr/local/bin/xrayr-json-simple << 'SIMPLE_MONITOR'
+#!/bin/bash
+nc 127.0.0.1 9999 | while read line; do
+    if [[ "$line" == *'"type":"url_access"'* ]]; then
+        echo "$line"
+    fi
+done
+SIMPLE_MONITOR
+
+chmod +x /usr/local/bin/xrayr-json-monitor
+chmod +x /usr/local/bin/xrayr-json-simple
+
 cat > /usr/local/bin/xrayr-monitor << 'MONITOR'
 #!/usr/bin/env python3
 import socket
@@ -373,7 +413,9 @@ echo -e "${YELLOW}5. 查看日志：${NC}"
 echo "   journalctl -u xrayr -f"
 echo ""
 echo -e "${YELLOW}6. 监控URL访问：${NC}"
-echo "   xrayr-monitor"
+echo "   xrayr-monitor              # 格式化显示"
+echo "   xrayr-json-monitor         # 纯JSON输出"
+echo "   xrayr-json-simple          # 简单JSON输出"
 echo ""
 echo -e "${YELLOW}7. 查看配置帮助：${NC}"
 echo "   xrayr-config"

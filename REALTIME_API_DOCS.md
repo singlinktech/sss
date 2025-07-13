@@ -553,8 +553,14 @@ python3 monitor.py
 
 ### 3. 使用已编译的监控工具
 ```bash
-# 使用内置的监控工具
+# 使用内置的监控工具（格式化显示）
 xrayr-monitor
+
+# 使用JSON监控工具（纯JSON输出）
+xrayr-json-monitor
+
+# 使用简单JSON监控工具（bash版本）
+xrayr-json-simple
 ```
 
 ### 4. 简单测试连接
@@ -564,6 +570,40 @@ telnet 127.0.0.1 9999
 
 # 使用nc测试连接
 nc 127.0.0.1 9999
+```
+
+## 📋 纯JSON输出
+
+如果您只需要JSON格式的数据（用于API集成或脚本处理），可以使用专门的JSON监控工具：
+
+### 使用Python JSON监控器
+```bash
+# 直接输出JSON格式
+xrayr-json-monitor
+
+# 保存到文件
+xrayr-json-monitor > /tmp/access.json
+
+# 结合jq处理
+xrayr-json-monitor | jq '.data.domain'
+
+# 过滤特定用户
+xrayr-json-monitor | jq 'select(.data.user_id == 23)'
+```
+
+### 使用Bash JSON监控器
+```bash
+# 简单版本，无Python依赖
+xrayr-json-simple
+
+# 配合其他工具使用
+xrayr-json-simple | grep "google.com"
+```
+
+### JSON输出示例
+每行输出一个完整的JSON对象：
+```json
+{"type":"url_access","data":{"timestamp":"2025-07-14T04:30:58.464805348+08:00","user_id":23,"email":"a9d727cd-330b-4edd-8911-7c224df6afd5@v2board.user","domain":"m.baidu.com","full_url":"https://m.baidu.com:443","protocol":"tls","node_id":28,"node_tag":"Shadowsocks_0.0.0.0_23999","source_ip":"218.252.250.102","user_info":"level:0,tag:Shadowsocks_0.0.0.0_23999,network:tcp","request_time":"2025-07-14 04:30:58"}}
 ```
 
 ## 🔧 高级用法

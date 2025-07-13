@@ -14,7 +14,14 @@ bash <(curl -L https://raw.githubusercontent.com/singlinktech/sss/main/ONE_CLICK
 
 ### 使用内置监控工具
 ```bash
+# 格式化显示（友好界面）
 xrayr-monitor
+
+# 纯JSON输出（适用于脚本处理）
+xrayr-json-monitor
+
+# 简单JSON输出（bash版本，无Python依赖）
+xrayr-json-simple
 ```
 
 ### 使用Python客户端
@@ -36,6 +43,21 @@ nc 127.0.0.1 9999
 
 # 使用telnet连接
 telnet 127.0.0.1 9999
+```
+
+### JSON格式输出
+```bash
+# 纯JSON输出，适用于API集成
+xrayr-json-monitor
+
+# 保存JSON到文件
+xrayr-json-monitor > /tmp/url_access.json
+
+# 结合jq处理JSON数据
+xrayr-json-monitor | jq '.data.domain'
+
+# 过滤特定域名的访问
+xrayr-json-monitor | jq 'select(.data.domain | contains("google"))'
 ```
 
 ## 📋 数据格式
