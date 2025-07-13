@@ -24,6 +24,15 @@ var (
 	rootCmd = &cobra.Command{
 		Use: "XrayR",
 		Run: func(cmd *cobra.Command, args []string) {
+			// 如果没有配置文件参数，显示帮助信息
+			if cfgFile == "" {
+				// 检查默认配置文件是否存在
+				if _, err := os.Stat("config.yml"); os.IsNotExist(err) {
+					showHelpWithoutConfig()
+					return
+				}
+			}
+
 			if err := run(); err != nil {
 				log.Fatal(err)
 			}
@@ -35,7 +44,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "Config file for XrayR.")
 }
 
-func getConfig() *viper.Viper {
+func getConfig() (*viper.Viper, error) {
 	config := viper.New()
 
 	// Set custom path and name
@@ -59,18 +68,21 @@ func getConfig() *viper.Viper {
 	}
 
 	if err := config.ReadInConfig(); err != nil {
-		log.Panicf("Config file error: %s \n", err)
+		return nil, fmt.Errorf("Config file error: %s", err)
 	}
 
 	config.WatchConfig() // Watch the config
 
-	return config
+	return config, nil
 }
 
 func run() error {
 	showVersion()
 
-	config := getConfig()
+	config, err := getConfig()
+	if err != nil {
+		return err
+	}
 	panelConfig := &panel.Config{}
 	if err := config.Unmarshal(panelConfig); err != nil {
 		return fmt.Errorf("Parse config file %v failed: %s \n", cfgFile, err)
@@ -118,4 +130,27 @@ func run() error {
 
 func Execute() error {
 	return rootCmd.Execute()
+}
+
+func showHelpWithoutConfig() {
+	fmt.Println(strings.Repeat("=", 60))
+	fmt.Println("           XrayR URL Logger 服务")
+	fmt.Println(strings.Repeat("=", 60))
+	fmt.Println()
+	fmt.Println("❌ 配置文件不存在！")
+	fmt.Println()
+	fmt.Println("📋 可用的命令:")
+	fmt.Println("  • xrayr status        - 显示服务状态和管理界面")
+	fmt.Println("  • xrayr version       - 显示版本信息")
+	fmt.Println("  • xrayr analyze       - 分析URL访问日志")
+	fmt.Println("  • xrayr -c config.yml - 使用指定配置文件启动服务")
+	fmt.Println()
+	fmt.Println("💡 建议操作:")
+	fmt.Println("  1. 创建配置文件 config.yml")
+	fmt.Println("  2. 运行 'xrayr status' 查看服务状态")
+	fmt.Println("  3. 使用 'systemctl start xrayr' 启动服务")
+	fmt.Println()
+	fmt.Println("📁 配置文件位置: /etc/XrayR/config.yml")
+	fmt.Println("📊 URL日志位置: /var/log/xrayr/url_access.log")
+	fmt.Println()
 }

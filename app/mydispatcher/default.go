@@ -5,6 +5,7 @@ package mydispatcher
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -418,6 +419,7 @@ func (d *DefaultDispatcher) routedDispatch(ctx context.Context, link *transport.
 		// 在规则检测后、转发前记录用户访问的URL
 		if d.URLLogger != nil {
 			var userID int = 0
+			var userEmail string = ""
 			var protocol string = "unknown"
 			var domain string = ""
 			var fullURL string = ""
@@ -429,11 +431,22 @@ func (d *DefaultDispatcher) routedDispatch(ctx context.Context, link *transport.
 				sourceIP = sessionInbound.Source.Address.String()
 			}
 
-			// 尝试从用户邮箱中提取用户ID（假设邮箱格式为 "userID@domain"）
-			emailParts := strings.Split(sessionInbound.User.Email, "@")
-			if len(emailParts) > 0 {
-				// 这里可以根据实际的用户ID获取方式进行调整
-				// 暂时使用邮箱作为用户标识
+			// 解析用户标识符 - 格式：Tag|Email|UID
+			// 例如：Shadowsocks_0.0.0.0_3555|uuid@v2board.user|123
+			userTag := sessionInbound.User.Email
+			tagParts := strings.Split(userTag, "|")
+			if len(tagParts) >= 3 {
+				// 提取真实的用户邮箱（第二部分）
+				userEmail = tagParts[1]
+
+				// 提取用户ID（第三部分）
+				if uid, err := strconv.Atoi(tagParts[2]); err == nil {
+					userID = uid
+				}
+			} else {
+				// 如果解析失败，使用原始email作为后备
+				userEmail = sessionInbound.User.Email
+				userID = 0
 			}
 
 			// 获取协议信息
@@ -457,7 +470,7 @@ func (d *DefaultDispatcher) routedDispatch(ctx context.Context, link *transport.
 			}
 
 			// 记录URL访问
-			d.URLLogger.LogURL(ctx, userID, sessionInbound.User.Email, domain, fullURL, protocol, sessionInbound.Tag, sourceIP, extraInfo)
+			d.URLLogger.LogURL(ctx, userID, userEmail, domain, fullURL, protocol, sessionInbound.Tag, sourceIP, extraInfo)
 		}
 	}
 
