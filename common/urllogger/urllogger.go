@@ -16,14 +16,17 @@ import (
 
 // URLRecord 表示一条URL访问记录
 type URLRecord struct {
-	Timestamp time.Time `json:"timestamp"`
-	UserID    int       `json:"user_id"`
-	Email     string    `json:"email"`
-	Domain    string    `json:"domain"`
-	FullURL   string    `json:"full_url"`
-	Protocol  string    `json:"protocol"`
-	NodeID    int       `json:"node_id"`
-	NodeTag   string    `json:"node_tag"`
+	Timestamp   time.Time `json:"timestamp"`
+	UserID      int       `json:"user_id"`
+	Email       string    `json:"email"`
+	Domain      string    `json:"domain"`
+	FullURL     string    `json:"full_url"`
+	Protocol    string    `json:"protocol"`
+	NodeID      int       `json:"node_id"`
+	NodeTag     string    `json:"node_tag"`
+	SourceIP    string    `json:"source_ip"`    // 用户源IP
+	UserInfo    string    `json:"user_info"`    // 额外用户信息
+	RequestTime string    `json:"request_time"` // 格式化时间
 }
 
 // Config URL记录器配置
@@ -168,14 +171,18 @@ func (ul *URLLogger) LogURL(ctx context.Context, userID int, email string, domai
 		}
 	}
 
+	timestamp := time.Now()
 	record := URLRecord{
-		Timestamp: time.Now(),
-		UserID:    userID,
-		Email:     email,
-		Domain:    domain,
-		Protocol:  protocol,
-		NodeID:    ul.nodeID,
-		NodeTag:   nodeTag,
+		Timestamp:   timestamp,
+		UserID:      userID,
+		Email:       email,
+		Domain:      domain,
+		Protocol:    protocol,
+		NodeID:      ul.nodeID,
+		NodeTag:     nodeTag,
+		SourceIP:    sourceIP,
+		UserInfo:    extraInfo,
+		RequestTime: timestamp.Format("2006-01-02 15:04:05"),
 	}
 
 	// 根据配置决定是否记录完整URL
@@ -199,9 +206,9 @@ func (ul *URLLogger) LogURL(ctx context.Context, userID int, email string, domai
 			Protocol:    record.Protocol,
 			NodeID:      record.NodeID,
 			NodeTag:     record.NodeTag,
-			SourceIP:    sourceIP,
-			UserInfo:    extraInfo,
-			RequestTime: record.Timestamp.Format("2006-01-02 15:04:05"),
+			SourceIP:    record.SourceIP,
+			UserInfo:    record.UserInfo,
+			RequestTime: record.RequestTime,
 		}
 		ul.realtimeServer.PushRecord(realtimeRecord)
 	}
