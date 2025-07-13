@@ -1,33 +1,26 @@
-# 编译后的二进制文件
-xrayr
-xrayr-linux-amd64
+# 忽略编译生成的二进制文件
+releases/xrayr-*
 *.exe
+*.so
+*.dylib
 
-# 日志文件
-*.log
-/tmp/
-
-# 系统文件
-.DS_Store
-Thumbs.db
-
-# IDE文件
-.idea/
+# 忽略IDE文件
 .vscode/
+.idea/
 *.swp
 *.swo
 
-# 测试文件
-*_test.go
-test_*.sh
+# 忽略操作系统文件
+.DS_Store
+Thumbs.db
 
-# 临时文件
+# 忽略日志文件
+*.log
+
+# 忽略临时文件
 *.tmp
-*.bak
-*.orig
+*.temp
 
-# 配置文件（包含敏感信息）
-config.yml
-*.key
-*.pem
-*.cert
+# 忽略构建目录
+build/
+dist/
