@@ -184,6 +184,13 @@ install_xrayr() {
     ln -sf /usr/local/bin/xrayr /usr/bin/xrayr
     ln -sf /usr/local/bin/xrayr /usr/bin/XrayR
     
+    # 验证二进制文件
+    if /usr/local/bin/xrayr --help >/dev/null 2>&1; then
+        log_info "二进制文件验证成功"
+    else
+        log_warn "二进制文件可能有问题，但已安装"
+    fi
+    
     # 清理临时文件
     rm -f "$DOWNLOAD_FILE"
     
@@ -194,7 +201,7 @@ install_xrayr() {
 create_config() {
     log_step "创建默认配置文件..."
     
-    cat > /etc/XrayR/config.yml << 'EOF'
+    cat > /etc/XrayR/config.yml << EOF
 # XrayR 配置文件 - 实时数据API版本
 # 自动生成于: $(date '+%Y-%m-%d %H:%M:%S')
 
@@ -315,7 +322,7 @@ After=network.target nss-lookup.target
 Type=simple
 User=root
 NoNewPrivileges=true
-ExecStart=/usr/local/bin/xrayr -config /etc/XrayR/config.yml
+ExecStart=/usr/local/bin/xrayr -c /etc/XrayR/config.yml
 Restart=on-failure
 RestartPreventExitStatus=1
 RestartSec=5
@@ -765,19 +772,36 @@ show_result() {
 start_and_test() {
     log_step "启动服务..."
     
+    # 重载systemd配置
+    systemctl daemon-reload
+    
     # 启动XrayR服务
     systemctl start xrayr
     
     # 等待服务启动
-    sleep 3
+    sleep 5
     
-    # 检查服务状态
+    # 详细检查服务状态
     if systemctl is-active --quiet xrayr; then
         log_success "XrayR服务启动成功"
+        
+        # 检查端口监听
+        sleep 2
+        if netstat -tlnp 2>/dev/null | grep -q ":9999"; then
+            log_success "实时推送端口9999已开启"
+        else
+            log_warn "端口9999未监听，可能需要检查配置"
+        fi
     else
-        log_warn "XrayR服务启动失败，请检查配置文件"
-        echo "查看错误日志: journalctl -u xrayr -f"
-        echo "编辑配置: nano /etc/XrayR/config.yml"
+        log_error "XrayR服务启动失败"
+        echo ""
+        echo "=== 错误诊断 ==="
+        echo "1. 查看详细错误: journalctl -u xrayr --no-pager -l"
+        echo "2. 检查配置文件: nano /etc/XrayR/config.yml"
+        echo "3. 手动测试启动: /usr/local/bin/xrayr -c /etc/XrayR/config.yml"
+        echo ""
+        echo "=== 最近的错误日志 ==="
+        journalctl -u xrayr --no-pager -l -n 10 || echo "无法获取日志"
     fi
 }
 
