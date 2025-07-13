@@ -1,0 +1,81 @@
+Log:
+  Level: info # Log level: none, error, warning, info, debug
+  AccessPath: /var/log/xrayr/access.log
+  ErrorPath: /var/log/xrayr/error.log
+DnsConfigPath: # /etc/XrayR/dns.json
+RouteConfigPath: # /etc/XrayR/route.json
+InboundConfigPath: # /etc/XrayR/custom_inbound.json
+OutboundConfigPath: # /etc/XrayR/custom_outbound.json
+ConnectionConfig:
+  Handshake: 4
+  ConnIdle: 30
+  UplinkOnly: 2
+  DownlinkOnly: 4
+  BufferSize: 64
+Nodes:
+  - PanelType: "NewV2board" # Panel type: SSpanel, NewV2board, PMpanel, Proxypanel, V2RaySocks, GoV2Panel, BunPanel
+    ApiConfig:
+      ApiHost: "https://your-panel-domain.com"
+      ApiKey: "your-api-key"
+      NodeID: 1
+      NodeType: V2ray # Node type: V2ray, Vmess, Vless, Shadowsocks, Trojan, Shadowsocks-Plugin
+      Timeout: 30
+      EnableVless: false
+      VlessFlow: "xtls-rprx-vision"
+      SpeedLimit: 0
+      DeviceLimit: 0
+      RuleListPath: # /etc/XrayR/rulelist
+      DisableCustomConfig: false
+    ControllerConfig:
+      ListenIP: 0.0.0.0
+      SendIP: 0.0.0.0
+      UpdatePeriodic: 60
+      EnableDNS: false
+      DNSType: AsIs
+      EnableProxyProtocol: false
+      AutoSpeedLimitConfig:
+        Limit: 0
+        WarnTimes: 0
+        LimitSpeed: 0
+        LimitDuration: 0
+      GlobalDeviceLimitConfig:
+        Enable: false
+        RedisNetwork: tcp
+        RedisAddr: 127.0.0.1:6379
+        RedisUsername: ""
+        RedisPassword: ""
+        RedisDB: 0
+        Timeout: 5
+        Expiry: 60
+      EnableFallback: false
+      FallBackConfigs: []
+      DisableLocalREALITYConfig: false
+      EnableREALITY: false
+      REALITYConfigs: null
+      CertConfig:
+        CertMode: none
+        CertDomain: ""
+        CertFile: ""
+        KeyFile: ""
+        Provider: ""
+        Email: ""
+        DNSEnv: {}
+      # ===== URL记录器配置 =====
+      URLLoggerConfig:
+        Enable: true                                    # 是否启用URL记录器
+        LogPath: "/var/log/xrayr/url_access.log"       # 日志文件路径
+        MaxFileSize: 100                               # 最大文件大小(MB)
+        MaxFileCount: 10                               # 最多保留的文件数
+        FlushInterval: 10                              # 刷新间隔(秒)
+        EnableDomainLog: true                          # 是否记录域名访问
+        EnableFullURL: false                           # 是否记录完整URL(包含路径和参数)
+        ExcludeDomains:                                # 排除的域名列表
+          - "example.com"
+          - "localhost"
+          - "127.0.0.1"
+          - "googleapis.com"
+          - "cloudflare.com"
+          - "cdnjs.cloudflare.com"
+        # ===== 实时推送配置 =====
+        EnableRealtime: true                           # 是否启用实时推送
+        RealtimeAddr: "127.0.0.1:9999"                 # 实时推送监听地址 

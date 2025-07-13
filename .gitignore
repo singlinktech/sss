@@ -1,0 +1,33 @@
+# 编译后的二进制文件
+xrayr
+xrayr-linux-amd64
+*.exe
+
+# 日志文件
+*.log
+/tmp/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# IDE文件
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 测试文件
+*_test.go
+test_*.sh
+
+# 临时文件
+*.tmp
+*.bak
+*.orig
+
+# 配置文件（包含敏感信息）
+config.yml
+*.key
+*.pem
+*.cert
