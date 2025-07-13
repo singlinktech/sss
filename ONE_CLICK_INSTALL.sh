@@ -49,13 +49,44 @@ fi
 
 # 检查Go版本
 GO_VERSION=$(go version 2>/dev/null | awk '{print $3}' | sed 's/go//')
-if [ -z "$GO_VERSION" ]; then
-    echo -e "${RED}Go语言未安装，正在安装...${NC}"
-    wget -O go.tar.gz https://golang.google.cn/dl/go1.21.0.linux-amd64.tar.gz
+GO_MAJOR=$(echo "$GO_VERSION" | cut -d. -f1)
+GO_MINOR=$(echo "$GO_VERSION" | cut -d. -f2)
+
+# 需要Go 1.20或更高版本
+if [ -z "$GO_VERSION" ] || [ "$GO_MAJOR" -lt 1 ] || ([ "$GO_MAJOR" -eq 1 ] && [ "$GO_MINOR" -lt 20 ]); then
+    echo -e "${YELLOW}Go版本过低或未安装，正在安装Go 1.21...${NC}"
+    
+    # 删除旧版本Go
+    rm -rf /usr/local/go
+    
+    # 下载并安装Go 1.21
+    case "$(uname -m)" in
+        x86_64)
+            GO_ARCH="amd64"
+            ;;
+        aarch64)
+            GO_ARCH="arm64"
+            ;;
+        *)
+            GO_ARCH="amd64"
+            ;;
+    esac
+    
+    wget -O go.tar.gz "https://go.dev/dl/go1.21.0.linux-${GO_ARCH}.tar.gz" || \
+    wget -O go.tar.gz "https://golang.google.cn/dl/go1.21.0.linux-${GO_ARCH}.tar.gz"
+    
     tar -C /usr/local -xzf go.tar.gz
-    export PATH=$PATH:/usr/local/go/bin
-    echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
     rm go.tar.gz
+    
+    # 设置环境变量
+    export PATH=/usr/local/go/bin:$PATH
+    echo 'export PATH=/usr/local/go/bin:$PATH' >> ~/.bashrc
+    echo 'export PATH=/usr/local/go/bin:$PATH' >> /etc/profile
+    
+    # 验证安装
+    /usr/local/go/bin/go version
+else
+    echo -e "${GREEN}Go版本检查通过: $GO_VERSION${NC}"
 fi
 
 # 下载项目
