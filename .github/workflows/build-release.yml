@@ -4,101 +4,65 @@ on:
   push:
     tags:
       - 'v*'
-  workflow_dispatch:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        include:
-          - goos: linux
-            goarch: amd64
-            name: linux-amd64
-          - goos: linux
-            goarch: arm64
-            name: linux-arm64
-          - goos: linux
-            goarch: 386
-            name: linux-386
-          - goos: windows
-            goarch: amd64
-            name: windows-amd64.exe
-
+        os: [linux]
+        arch: [amd64, arm64]
+    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
+    - uses: actions/checkout@v3
+    
     - name: Set up Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v3
       with:
-        go-version: '1.21'
-
+        go-version: 1.21
+    
+    - name: Cache Go modules
+      uses: actions/cache@v3
+      with:
+        path: ~/go/pkg/mod
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          ${{ runner.os }}-go-
+    
     - name: Build
-      env:
-        GOOS: ${{ matrix.goos }}
-        GOARCH: ${{ matrix.goarch }}
-        CGO_ENABLED: 0
       run: |
-        go mod download
-        go build -o xrayr-${{ matrix.name }} -trimpath -ldflags "-s -w" ./main.go
-
+        export CGO_ENABLED=0
+        export GOOS=${{ matrix.os }}
+        export GOARCH=${{ matrix.arch }}
+        go build -o xrayr-${{ matrix.os }}-${{ matrix.arch }} -trimpath -ldflags "-s -w -buildid=" ./main.go
+    
     - name: Upload artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v3
       with:
-        name: xrayr-${{ matrix.name }}
-        path: xrayr-${{ matrix.name }}
-
+        name: xrayr-${{ matrix.os }}-${{ matrix.arch }}
+        path: xrayr-${{ matrix.os }}-${{ matrix.arch }}
+        
   release:
     needs: build
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     
     steps:
-    - name: Download artifacts
-      uses: actions/download-artifact@v4
-
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - uses: actions/checkout@v3
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v3
+      
+    - name: Create release
+      uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ github.ref }}
-        release_name: XrayR-URLLogger ${{ github.ref }}
-        body: |
-          ## XrayR with URL Logger and Realtime Push
-          
-          ### 新功能
-          - URL访问记录器
-          - 实时推送功能（TCP端口9999）
-          - 恶意网站检测
-          - 命令行分析工具
-          
-          ### 安装方法
-          ```bash
-          bash <(curl -L https://raw.githubusercontent.com/singlinktech/sss/main/EASY_INSTALL.sh)
-          ```
-          
-          ### 配置方法
-          在 `ControllerConfig` 中添加：
-          ```yaml
-          URLLoggerConfig:
-            Enable: true
-            EnableRealtime: true
-            RealtimeAddr: "127.0.0.1:9999"
-          ```
+        files: |
+          xrayr-*/xrayr-*
         draft: false
         prerelease: false
-
-    - name: Upload Release Assets
-      run: |
-        for file in xrayr-*/*; do
-          filename=$(basename "$file")
-          echo "Uploading $filename"
-          curl -X POST \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Content-Type: application/octet-stream" \
-            --data-binary @"$file" \
-            "${{ steps.create_release.outputs.upload_url }}?name=$filename"
-        done 
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 

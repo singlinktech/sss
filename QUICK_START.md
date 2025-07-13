@@ -1,100 +1,253 @@
-# 超快速开始 - 3分钟搞定！
+# XrayR URL Logger - 3分钟快速开始
 
-## 第一步：运行安装脚本（30秒）
-
-在你的服务器上运行：
+## 🚀 一键安装（推荐）
 
 ```bash
 bash <(curl -L https://raw.githubusercontent.com/singlinktech/sss/main/EASY_INSTALL.sh)
 ```
 
-这个脚本会：
-- ✅ 下载已经编译好的XrayR（带URL记录功能）
-- ✅ 自动创建系统服务
-- ✅ 无需安装Go，无需等待编译
+## 📋 快速配置
 
-## 第二步：修改配置文件（2分钟）
+### 1. 编辑配置文件
 
-编辑你的配置文件：
 ```bash
 nano /etc/XrayR/config.yml
 ```
 
-找到你的节点配置，在 `ControllerConfig:` 里面，`CertConfig:` 后面，添加这段：
+### 2. 修改你的面板信息
 
 ```yaml
-      # URL记录器配置
-      URLLoggerConfig:
-        Enable: true                               # 开启
-        LogPath: "/var/log/xrayr/url_access.log"  # 日志文件
-        EnableRealtime: true                      # 开启实时推送
-        RealtimeAddr: "127.0.0.1:9999"           # 监听端口
+Nodes:
+  - PanelType: "V2board"      # 面板类型
+    ApiConfig:
+      ApiHost: "https://your-panel.com"  # 你的面板地址
+      ApiKey: "your-api-key"             # 你的API密钥
+      NodeID: 1                          # 你的节点ID
+      NodeType: V2ray                    # 节点类型
 ```
 
-**注意缩进！要和 CertConfig 对齐！**
+### 3. 确认URL记录器配置已启用
 
-## 第三步：启动服务（30秒）
+```yaml
+    ControllerConfig:
+      URLLoggerConfig:
+        Enable: true                               # 启用URL记录器
+        LogPath: "/var/log/xrayr/url_access.log"  # 日志文件路径
+        EnableRealtime: true                      # 启用实时推送
+        RealtimeAddr: "127.0.0.1:9999"           # 实时推送地址
+```
+
+### 4. 启动服务
 
 ```bash
-# 启动
 systemctl start xrayr
+systemctl enable xrayr
+```
 
-# 查看状态
+## 🔍 验证运行
+
+### 检查服务状态
+```bash
 systemctl status xrayr
 ```
 
-## 完成！开始使用
-
-### 查看实时数据
+### 查看日志
 ```bash
-nc localhost 9999
+journalctl -u xrayr -f
 ```
 
-### 查看日志文件
+### 监控URL访问（实时）
+```bash
+xrayr-monitor
+```
+
+### 查看URL访问日志
 ```bash
 tail -f /var/log/xrayr/url_access.log
 ```
 
-### 检查是否工作
+## 📊 数据格式
+
+URL访问日志格式：
+```json
+{
+  "request_time": "2024-01-01T12:00:00Z",
+  "user_id": 123,
+  "email": "user@example.com",
+  "domain": "example.com",
+  "full_url": "https://example.com/path",
+  "protocol": "shadowsocks",
+  "node_id": 1,
+  "source_ip": "1.2.3.4",
+  "user_info": {
+    "device_limit": 3,
+    "speed_limit": 0
+  }
+}
+```
+
+实时推送数据格式：
+```json
+{
+  "type": "url_access",
+  "data": {
+    "request_time": "2024-01-01T12:00:00Z",
+    "user_id": 123,
+    "email": "user@example.com",
+    "domain": "example.com",
+    "source_ip": "1.2.3.4",
+    "protocol": "shadowsocks"
+  }
+}
+```
+
+## 🛠️ 常用命令
+
 ```bash
-journalctl -u xrayr | grep -E "URL记录器|实时推送"
+# 查看配置帮助
+xrayr-config
+
+# 监控实时数据
+xrayr-monitor
+
+# 重启服务
+systemctl restart xrayr
+
+# 查看端口占用
+netstat -tlnp | grep 9999
+
+# 测试实时推送
+nc localhost 9999
 ```
 
-应该看到：
-```
-URL记录器启动成功 path=/var/log/xrayr/url_access.log
-实时推送服务器已启动 address=127.0.0.1:9999
-```
+## 🔧 故障排除
 
-## 故障排除
-
-### 如果没有记录？
-
-1. 确认配置中 `Enable: true`
-2. 确认有用户在使用代理
-3. 重启服务：`systemctl restart xrayr`
-
-### 如果下载失败？
-
-手动下载：
+### 服务无法启动
 ```bash
-# Linux amd64
-wget https://github.com/singlinktech/sss/releases/download/v1.0.0/xrayr-linux-amd64
+# 检查配置文件语法
+xrayr -c /etc/XrayR/config.yml -test
 
-# Linux arm64
-wget https://github.com/singlinktech/sss/releases/download/v1.0.0/xrayr-linux-arm64
-
-chmod +x xrayr-linux-*
-mv xrayr-linux-* /usr/local/bin/xrayr
+# 查看详细错误日志
+journalctl -u xrayr --no-pager -l
 ```
 
-## 就这么简单！
+### 端口被占用
+```bash
+# 查看端口占用
+lsof -i :9999
 
-- 不需要编译
-- 不需要Go环境
-- 只需要改配置文件
-- 3分钟搞定！
+# 修改端口配置
+nano /etc/XrayR/config.yml
+# 修改 RealtimeAddr: "127.0.0.1:9998"
+```
+
+### 实时推送无法连接
+```bash
+# 确认服务运行
+systemctl status xrayr
+
+# 检查配置
+grep -A5 "URLLoggerConfig" /etc/XrayR/config.yml
+
+# 检查防火墙
+iptables -L | grep 9999
+```
+
+## 📝 完整配置示例
+
+```yaml
+Log:
+  Level: warning
+  AccessPath: 
+  ErrorPath: 
+DnsConfigPath: 
+InboundConfigPath: 
+OutboundConfigPath: 
+RouteConfigPath: 
+ConnectionConfig:
+  Handshake: 4
+  ConnIdle: 30
+  UplinkOnly: 2
+  DownlinkOnly: 4
+  BufferSize: 64
+Nodes:
+  - PanelType: "V2board"
+    ApiConfig:
+      ApiHost: "https://your-panel.com"
+      ApiKey: "your-api-key"
+      NodeID: 1
+      NodeType: V2ray
+      Timeout: 30
+      EnableVless: false
+      EnableXTLS: false
+      SpeedLimit: 0
+      DeviceLimit: 0
+      RuleListPath: 
+    ControllerConfig:
+      ListenIP: 0.0.0.0
+      SendIP: 0.0.0.0
+      UpdatePeriod: 60
+      EnableDNS: false
+      DNSType: AsIs
+      EnableProxyProtocol: false
+      URLLoggerConfig:
+        Enable: true
+        LogPath: "/var/log/xrayr/url_access.log"
+        MaxFileSize: 100
+        MaxFileCount: 10
+        FlushInterval: 10
+        EnableDomainLog: true
+        EnableFullURL: false
+        ExcludeDomains:
+          - "localhost"
+          - "127.0.0.1"
+          - "apple.com"
+          - "icloud.com"
+        EnableRealtime: true
+        RealtimeAddr: "127.0.0.1:9999"
+```
+
+## 🌟 高级功能
+
+### 恶意网站检测
+系统自动检测访问的恶意网站并在日志中标记：
+```json
+{
+  "is_malicious": true,
+  "malicious_type": "phishing",
+  "detection_reason": "Known phishing domain"
+}
+```
+
+### 自定义排除域名
+```yaml
+ExcludeDomains:
+  - "localhost"
+  - "127.0.0.1"
+  - "apple.com"
+  - "icloud.com"
+  - "google.com"
+  - "github.com"
+```
+
+### 日志轮转配置
+```yaml
+MaxFileSize: 100    # 100MB
+MaxFileCount: 10    # 保留10个文件
+```
+
+## 📞 技术支持
+
+- 项目地址：https://github.com/singlinktech/sss
+- 如有问题，请提交 Issue
+- 功能建议欢迎 PR
 
 ---
 
-**提示**：如果你想看更详细的功能说明，查看 [完整文档](DEPLOYMENT_COMPLETE_GUIDE.md) 
+**⚡ 安装完成后，你就可以：**
+- 🔍 实时监控用户访问的网站
+- 🚨 检测恶意网站访问
+- 📊 分析用户行为数据
+- 🔄 通过TCP推送获取实时数据
+
+**�� 记住：修改配置文件后要重启服务！** 
