@@ -1,6 +1,8 @@
 module github.com/XrayR-project/XrayR
 
-go 1.20
+go 1.24
+
+toolchain go1.24.3
 
 require (
 	dario.cat/mergo v1.0.0
