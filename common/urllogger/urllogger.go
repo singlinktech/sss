@@ -97,17 +97,23 @@ func (ul *URLLogger) Start() error {
 		return nil
 	}
 
-	// 创建日志目录
-	logDir := filepath.Dir(ul.config.LogPath)
-	if err := os.MkdirAll(logDir, 0755); err != nil {
-		return fmt.Errorf("创建日志目录失败: %v", err)
-	}
+	// 如果LogPath不为空，才创建日志文件
+	if ul.config.LogPath != "" {
+		// 创建日志目录
+		logDir := filepath.Dir(ul.config.LogPath)
+		if err := os.MkdirAll(logDir, 0755); err != nil {
+			return fmt.Errorf("创建日志目录失败: %v", err)
+		}
 
-	// 打开日志文件
-	var err error
-	ul.logFile, err = os.OpenFile(ul.config.LogPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
-	if err != nil {
-		return fmt.Errorf("打开日志文件失败: %v", err)
+		// 打开日志文件
+		var err error
+		ul.logFile, err = os.OpenFile(ul.config.LogPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+		if err != nil {
+			return fmt.Errorf("打开日志文件失败: %v", err)
+		}
+		log.WithField("path", ul.config.LogPath).Info("URL日志文件已创建")
+	} else {
+		log.Info("URL记录器运行在纯实时推送模式（不保存文件）")
 	}
 
 	// 启动实时推送服务器
@@ -119,7 +125,11 @@ func (ul *URLLogger) Start() error {
 	}
 
 	ul.running = true
-	go ul.flushRoutine()
+
+	// 只有在需要文件记录时才启动flush routine
+	if ul.logFile != nil {
+		go ul.flushRoutine()
+	}
 
 	log.WithFields(log.Fields{
 		"path":          ul.config.LogPath,
@@ -127,6 +137,7 @@ func (ul *URLLogger) Start() error {
 		"interval":      ul.config.FlushInterval,
 		"realtime":      ul.config.EnableRealtime,
 		"realtime_addr": ul.config.RealtimeAddr,
+		"file_mode":     ul.logFile != nil,
 	}).Info("URL记录器启动成功")
 
 	return nil
@@ -190,12 +201,14 @@ func (ul *URLLogger) LogURL(ctx context.Context, userID int, email string, domai
 		record.FullURL = fullURL
 	}
 
-	// 添加到缓冲区
-	ul.bufferMutex.Lock()
-	ul.buffer = append(ul.buffer, record)
-	ul.bufferMutex.Unlock()
+	// 如果启用了文件记录，添加到缓冲区
+	if ul.logFile != nil {
+		ul.bufferMutex.Lock()
+		ul.buffer = append(ul.buffer, record)
+		ul.bufferMutex.Unlock()
+	}
 
-	// 实时推送
+	// 实时推送（始终执行，这是核心功能）
 	if ul.realtimeServer != nil && ul.realtimeServer.IsEnabled() {
 		realtimeRecord := &RealtimeRecord{
 			Timestamp:   record.Timestamp,
@@ -223,7 +236,7 @@ func (ul *URLLogger) flush() {
 		return
 	}
 
-	// 写入文件
+	// 如果启用了文件记录，写入文件
 	if ul.logFile != nil {
 		for _, record := range ul.buffer {
 			jsonData, err := json.Marshal(record)
@@ -238,6 +251,7 @@ func (ul *URLLogger) flush() {
 			}
 		}
 		ul.logFile.Sync()
+		log.WithField("count", len(ul.buffer)).Debug("URL记录已写入文件")
 	}
 
 	// 发送到面板API（如果支持）

@@ -1,0 +1,41 @@
+# XrayR URL Logger API 依赖包
+# 用于HTTP API服务器
+
+# Web框架
+Flask==2.3.3
+Flask-CORS==4.0.0
+
+# WebSocket支持
+websockets==11.0.3
+
+# HTTP客户端
+requests==2.31.0
+websocket-client==1.6.3
+
+# 数据库
+sqlite3  # Python内置，无需安装
+
+# 异步支持
+asyncio  # Python内置，无需安装
+
+# 时间处理
+python-dateutil==2.8.2
+
+# JSON处理
+# json # Python内置，无需安装
+
+# 日志处理
+# logging # Python内置，无需安装
+
+# 系统工具
+# threading # Python内置，无需安装
+# socket # Python内置，无需安装
+# time # Python内置，无需安装
+
+# 可选依赖（用于生产环境）
+# redis==4.6.0
+# psycopg2-binary==2.9.7  # PostgreSQL
+# pymongo==4.5.0  # MongoDB
+# celery==5.3.2  # 任务队列
+# gunicorn==21.2.0  # WSGI服务器
+# supervisor==4.2.5  # 进程管理 

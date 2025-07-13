@@ -1,0 +1,67 @@
+# XrayR配置示例 - 纯实时推送模式（不保存文件）
+# 适用于通过API获取实时数据的场景
+
+# 面板配置
+Nodes:
+  - PanelType: "NewV2board" # 或其他面板类型
+    ApiConfig:
+      ApiHost: "https://你的面板域名.com"
+      ApiKey: "你的API密钥"
+      NodeID: 28
+      NodeType: Shadowsocks
+      Timeout: 30
+      EnableVless: false
+      EnableXTLS: false
+      SpeedLimit: 0
+      DeviceLimit: 0
+    ControllerConfig:
+      ListenIP: 0.0.0.0
+      SendIP: 0.0.0.0
+      UpdatePeriodic: 60
+      EnableDNS: false
+      DNSType: AsIs
+      EnableProxyProtocol: false
+      AutoSpeedLimitConfig:
+        Limit: 0
+        WarnTimes: 0
+        LimitSpeed: 0
+        LimitDuration: 0
+      GlobalDeviceLimitConfig:
+        Enable: false
+        RedisAddr: "127.0.0.1:6379"
+        RedisPassword: ""
+        RedisDB: 0
+        Timeout: 5
+        Expiry: 60
+      
+      # ✨ URL记录器配置 - 纯实时推送模式
+      URLLoggerConfig:
+        Enable: true                    # 启用URL记录器
+        LogPath: ""                     # 🔥 留空，不保存文件
+        MaxFileSize: 0                  # 🔥 设为0，不保存文件
+        MaxFileCount: 0                 # 🔥 设为0，不保存文件
+        FlushInterval: 1                # 🔥 设为1秒，立即推送
+        EnableDomainLog: true           # 记录域名访问
+        EnableFullURL: true             # 🔥 启用完整URL记录
+        ExcludeDomains:                 # 排除不需要记录的域名
+          - "localhost"
+          - "127.0.0.1"
+          - "apple.com"                 # 排除苹果系统请求
+          - "icloud.com"
+          - "microsoft.com"
+          - "windows.com"
+        
+        # 🚀 实时推送配置（这是核心）
+        EnableRealtime: true            # 🔥 启用实时推送
+        RealtimeAddr: "0.0.0.0:9999"   # 🔥 监听所有网络接口
+
+# 日志配置
+LogConfig:
+  Level: info
+  AccessPath: 
+  ErrorPath: 
+  AccessLogConfig:
+    Enable: false                       # 🔥 关闭访问日志
+    File: ""
+    Disable: false
+    Format: "" 
