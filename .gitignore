@@ -24,3 +24,9 @@ Thumbs.db
 # 忽略构建目录
 build/
 dist/
+# 添加更多二进制文件忽略规则
+xrayr
+XrayR
+xrayr-*
+/releases/xrayr-*
+
