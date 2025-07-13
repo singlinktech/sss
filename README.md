@@ -359,6 +359,7 @@ docker-compose up -d
 - 📗 **[实时API文档](REALTIME_API_DOCS.md)** - 完整的API接口文档
 - 📙 **[快速使用指南](QUICK_USE_GUIDE.md)** - 快速上手指南
 - 📕 **[部署指南](EASY_DEPLOYMENT_STEPS.md)** - 详细部署步骤
+- 🔧 **[故障排除指南](TROUBLESHOOTING.md)** - 问题诊断和解决方案
 
 ## 🤝 应用场景
 
@@ -390,6 +391,18 @@ A: 请检查：
 2. URLLoggerConfig.Enable 是否为 true
 3. RealtimeAddr 是否配置正确
 4. 防火墙是否开放9999端口
+
+### Q: 服务启动失败怎么办？
+A: 如果遇到 "unknown command" 错误，请运行快速修复：
+```bash
+curl -L https://raw.githubusercontent.com/singlinktech/sss/main/FIX_SERVICE.sh | bash
+```
+
+### Q: 如何诊断系统问题？
+A: 使用自动诊断工具：
+```bash
+curl -L https://raw.githubusercontent.com/singlinktech/sss/main/scripts/diagnose.sh | bash
+```
 
 ### Q: 如何减少数据量？
 A: 在配置中添加 ExcludeDomains 来过滤不需要的域名。
