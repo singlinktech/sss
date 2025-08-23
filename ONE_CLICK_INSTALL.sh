@@ -3,6 +3,7 @@
 # ======================================
 # XrayR URL Logger 一键安装脚本 
 # 完整版本 - 集成所有实时数据API功能
+# 修复版本 - 显示详细错误信息
 # ======================================
 
 set -e
@@ -109,18 +110,55 @@ check_system() {
     log_success "系统检测完成: $OS ($ARCH)"
 }
 
-# 安装依赖
+# 安装依赖 - 修复版本，显示详细信息
 install_dependencies() {
     log_step "安装必要依赖..."
     
     if [ "$PKG_MANAGER" = "apt" ]; then
-        apt-get update -y >/dev/null 2>&1
-        apt-get install -y wget curl systemd python3 python3-pip unzip >/dev/null 2>&1
+        log_info "更新软件包列表..."
+        if ! apt-get update -y; then
+            log_error "软件包列表更新失败，尝试使用备用源..."
+            # 备份原有源
+            cp /etc/apt/sources.list /etc/apt/sources.list.backup.$(date +%Y%m%d_%H%M%S)
+            
+            # 尝试使用阿里云源
+            cat > /etc/apt/sources.list << EOF
+deb http://mirrors.aliyun.com/debian/ bullseye main non-free contrib
+deb-src http://mirrors.aliyun.com/debian/ bullseye main non-free contrib
+deb http://mirrors.aliyun.com/debian-security/ bullseye-security main
+deb-src http://mirrors.aliyun.com/debian-security/ bullseye-security main
+deb http://mirrors.aliyun.com/debian/ bullseye-updates main non-free contrib
+deb-src http://mirrors.aliyun.com/debian/ bullseye-updates main non-free contrib
+EOF
+            
+            log_info "重试更新软件包列表..."
+            apt-get update -y || {
+                log_error "更新失败，请检查网络连接和DNS设置"
+                exit 1
+            }
+        fi
+        
+        log_info "安装依赖包: wget curl systemd python3 python3-pip unzip"
+        apt-get install -y wget curl systemd python3 python3-pip unzip || {
+            log_error "依赖包安装失败"
+            exit 1
+        }
+        
     elif [ "$PKG_MANAGER" = "yum" ]; then
-        yum update -y >/dev/null 2>&1
-        yum install -y wget curl systemd python3 python3-pip unzip >/dev/null 2>&1
+        log_info "更新YUM软件包..."
+        yum update -y || {
+            log_warn "YUM更新失败，继续尝试安装依赖"
+        }
+        
+        log_info "安装依赖包: wget curl systemd python3 python3-pip unzip"
+        yum install -y wget curl systemd python3 python3-pip unzip || {
+            log_error "依赖包安装失败"
+            exit 1
+        }
     else
-        log_warn "未知的包管理器，请手动安装: wget curl systemd python3"
+        log_warn "未知的包管理器，请手动安装: wget curl systemd python3 python3-pip unzip"
+        log_info "等待10秒后继续..."
+        sleep 10
     fi
     
     log_success "依赖安装完成"
@@ -344,21 +382,24 @@ install_api_tools() {
     log_step "安装API代理工具..."
     
     # 安装Python依赖
-    pip3 install --quiet flask flask-cors websockets requests websocket-client >/dev/null 2>&1 || {
+    log_info "安装Python依赖包..."
+    if ! pip3 install --quiet flask flask-cors websockets requests websocket-client; then
         log_warn "Python依赖安装失败，API代理功能可能不可用"
         return
-    }
+    fi
     
     # 下载API代理服务器
-    wget -q -O /opt/xrayr-api/http_api_server.py "https://raw.githubusercontent.com/singlinktech/sss/main/api_integration/http_api_server.py" || {
+    log_info "下载API代理服务器..."
+    if ! wget -q -O /opt/xrayr-api/http_api_server.py "https://raw.githubusercontent.com/singlinktech/sss/main/api_integration/http_api_server.py"; then
         log_warn "API代理服务器下载失败"
         return
-    }
+    fi
     
     # 下载客户端示例
-    wget -q -O /opt/xrayr-api/client_examples.py "https://raw.githubusercontent.com/singlinktech/sss/main/api_integration/client_examples.py" || {
+    log_info "下载客户端示例..."
+    if ! wget -q -O /opt/xrayr-api/client_examples.py "https://raw.githubusercontent.com/singlinktech/sss/main/api_integration/client_examples.py"; then
         log_warn "客户端示例下载失败"
-    }
+    fi
     
     # 创建API代理服务
     cat > /etc/systemd/system/xrayr-api.service << 'EOF'
@@ -832,4 +873,4 @@ main() {
 }
 
 # 运行主程序
-main "$@" 
+main "$@"
